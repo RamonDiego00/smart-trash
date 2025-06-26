@@ -22,14 +22,23 @@ def main():
     input_details = interpreter.get_input_details()
     output_details = interpreter.get_output_details()
 
+    # Verifica o tipo de entrada esperado pelo modelo
+    input_dtype = input_details[0]['dtype']
+    print(f"O modelo espera entrada do tipo: {input_dtype}")
+
     try:
         while True:
             # Captura imagem com Picamera2
             image = picam2.capture_array()
             
-            # Pré-processamento (normalização para int8)
-            input_data = np.expand_dims(image, axis=0).astype(np.float32)
-            input_data = (input_data / 127.5) - 1  # Normalização para modelos quantizados
+            # Pré-processamento adequado para modelo quantizado UINT8
+            if input_dtype == np.uint8:
+                # Modelo quantizado - não normalizar para float
+                input_data = np.expand_dims(image, axis=0)
+            else:
+                # Modelo float - normalizar
+                input_data = np.expand_dims(image.astype(np.float32), axis=0)
+                input_data = (input_data / 127.5) - 1
             
             # Inferência
             interpreter.set_tensor(input_details[0]['index'], input_data)
@@ -43,10 +52,10 @@ def main():
             
             print(f"Objeto: {label} - Confiança: {confidence*100:.1f}%")
             
-            # Mostra imagem com resultado (opcional)
+            # Mostra imagem com resultado
             cv2.putText(image, f"{label} ({confidence*100:.1f}%)", 
-                        (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 
-                        0.7, (0, 255, 0), 2)
+                       (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 
+                       0.7, (0, 255, 0), 2)
             cv2.imshow("Classificação", image)
             
             if cv2.waitKey(1) & 0xFF == ord('q'):
