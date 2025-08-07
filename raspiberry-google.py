@@ -6,14 +6,14 @@ import time
 import pigpio
 
 # ================== CONFIGURAÇÕES ==================
-CONFIDENCE_THRESHOLD = 0.85
+CONFIDENCE_THRESHOLD = 150.0
 STABLE_TIME_REQUIRED = 1.5
 SERVO_GPIO = 13  # GPIO físico 33
 PULSE_LEFT = 1000   # µs ≈ -30°
 PULSE_CENTER = 1500 # µs ≈ 0°
 PULSE_RIGHT = 2000  # µs ≈ +30°
-LABEL_LEFT = "pilhas"
-LABEL_RIGHT = "carregador"
+LABEL_LEFT = "2 Pilhas"
+LABEL_RIGHT = "0 Fontes"
 # ===================================================
 
 def main():
@@ -72,9 +72,18 @@ def main():
 
             agora = time.time()
 
-            if confidence >= CONFIDENCE_THRESHOLD and label in [LABEL_LEFT, LABEL_RIGHT]:
+            print(agora)
+            print(label)
+            print(LABEL_LEFT, LABEL_RIGHT)
+            print(confidence)
+            print(CONFIDENCE_THRESHOLD)
+
+
+            if confidence > CONFIDENCE_THRESHOLD and label in [LABEL_LEFT, LABEL_RIGHT]:
+                print("Passou pela confian'ca")
                 if label == last_detected_label:
                     if detection_start_time and (agora - detection_start_time) >= STABLE_TIME_REQUIRED:
+                        print("Passou pelo tempo de duracao")
                         if label == LABEL_LEFT and estado_atual != "ESQUERDA":
                             print("Inclina para ESQUERDA")
                             pi.set_servo_pulsewidth(SERVO_GPIO, PULSE_LEFT)
@@ -93,8 +102,9 @@ def main():
                 detection_start_time = None
 
             # Voltar para centro se sem detecção por mais de 3s
-            if agora - ultima_acao_time > 3 and estado_atual != "CENTRO":
+            if agora - ultima_acao_time > 10 and estado_atual != "CENTRO":
                 print("Retornando ao CENTRO")
+                # Colocar um anuncio por voz via bluetooth                                                                            
                 pi.set_servo_pulsewidth(SERVO_GPIO, PULSE_CENTER)
                 estado_atual = "CENTRO"
                 ultima_acao_time = agora
